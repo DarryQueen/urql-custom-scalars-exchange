@@ -109,13 +109,13 @@ const listNestedNullable: TestCase = {
 const listNestedWithInput: TestCase = {
   name: 'listNestedWithInput',
   query: gql`
-    {
+    query ListNestedWithInput($input: ListInput) {
       listNested(input: $input) {
         name
       }
     }
   `,
-  variables: { input: { topInput: 'topInput' } },
+  variables: { input: 'topInput' },
   data: { listNested: [nestedData, nestedData] },
   calls: 2,
 };

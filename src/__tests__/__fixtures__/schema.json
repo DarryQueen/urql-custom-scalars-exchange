@@ -70,7 +70,7 @@
                 "name": "input",
                 "type": {
                   "kind": "INPUT_OBJECT",
-                  "name": "ListNestedInput",
+                  "name": "ListInput",
                   "ofType": null
                 },
                 "defaultValue": null

@@ -72,9 +72,7 @@ Object {
 
 exports[`works on the listNestedWithInput structure: Variables 1`] = `
 Object {
-  "input": Object {
-    "topInput": "topInput",
-  },
+  "input": "topInput",
 }
 `;
 
