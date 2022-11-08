@@ -158,7 +158,7 @@ export default function scalarExchange({
       }
 
       if (isScalarType(variableType)) {
-        if (scalars[variableType.name].serialize) {
+        if (scalars[variableType.name]?.serialize) {
           return [{ name: variableType.name, path: [] }];
         }
         return [];
@@ -230,7 +230,7 @@ export default function scalarExchange({
         }
 
         const { name } = scalarType;
-        if (scalars[name].deserialize == null) {
+        if (scalars[name]?.deserialize == null) {
           return;
         }
 
@@ -336,7 +336,7 @@ export default function scalarExchange({
           operation.variables = mapScalar(
             operation.variables,
             path,
-            scalars[name].serialize
+            scalars[name]?.serialize
           );
         });
         return operation;
@@ -357,7 +357,7 @@ export default function scalarExchange({
         }
 
         scalarsInQuery.forEach(({ name, path }) => {
-          args.data = mapScalar(args.data, path, scalars[name].deserialize);
+          args.data = mapScalar(args.data, path, scalars[name]?.deserialize);
         });
         return args;
       })
