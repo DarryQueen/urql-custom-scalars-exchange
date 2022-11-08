@@ -115,9 +115,11 @@ const listNestedWithInput: TestCase = {
       }
     }
   `,
-  variables: { input: 'topInput' },
+  variables: {
+    input: { topInput: 'topInput', nested: { nestedInput: 'nestedInput' } },
+  },
   data: { listNested: [nestedData, nestedData] },
-  calls: 2,
+  calls: 4,
 };
 
 const fragment1: TestCase = {
