@@ -1,0 +1,106 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`works on different structures: Output 1`] = `
+Object {
+  "__typename": "Query",
+  "listNested": Array [
+    Object {
+      "name": "A",
+    },
+  ],
+}
+`;
+
+exports[`works on different structures: Output 2`] = `
+Object {
+  "__typename": "Query",
+  "listNested": Array [
+    Object {
+      "name": "A",
+    },
+    Object {
+      "name": "A",
+    },
+  ],
+}
+`;
+
+exports[`works on different structures: Output 3`] = `
+Object {
+  "__typename": "Query",
+  "list": Array [
+    "A",
+    "A",
+  ],
+}
+`;
+
+exports[`works on different structures: Output 4`] = `
+Object {
+  "__typename": "Query",
+  "listNested": Array [
+    Object {
+      "name": "A",
+    },
+    Object {
+      "name": "A",
+    },
+  ],
+}
+`;
+
+exports[`works on different structures: Output 5`] = `
+Object {
+  "__typename": "Query",
+  "listNestedNullable": null,
+}
+`;
+
+exports[`works on different structures: Output 6`] = `
+Object {
+  "__typename": "Query",
+  "nested": Object {
+    "name": "A",
+  },
+}
+`;
+
+exports[`works on different structures: Output 7`] = `
+Object {
+  "__typename": "Query",
+  "nestedNullable": null,
+}
+`;
+
+exports[`works on different structures: Output 8`] = `
+Object {
+  "__typename": "Query",
+  "first": Object {
+    "name": "A",
+  },
+  "second": Object {
+    "name": "A",
+  },
+}
+`;
+
+exports[`works on different structures: Output 9`] = `
+Object {
+  "__typename": "Query",
+  "simple": "A",
+}
+`;
+
+exports[`works on different structures: Output 10`] = `
+Object {
+  "__typename": "Query",
+  "listNested": Array [
+    Object {
+      "deeplyNested": Object {
+        "name": "SECONDLEVEL",
+      },
+      "name": "FIRSTLEVEL",
+    },
+  ],
+}
+`;

@@ -4,12 +4,18 @@ import {
   OperationResult,
   createClient,
 } from '@urql/core';
-import { IntrospectionQuery } from 'graphql';
+import { DocumentNode, IntrospectionQuery } from 'graphql';
 import gql from 'graphql-tag';
 import { pipe, map, makeSubject, publish, tap } from 'wonka';
 
 import scalarExchange from '../';
 import schema from './__fixtures__/schema.json';
+
+interface TestCase {
+  query: DocumentNode;
+  data: {};
+  calls: number;
+}
 
 const dispatchDebug = jest.fn();
 
@@ -24,7 +30,7 @@ beforeEach(() => {
 const simpleData = 'a';
 const nestedData = { name: 'a' };
 
-const simple = {
+const simple: TestCase = {
   query: gql`
     {
       simple
@@ -34,7 +40,7 @@ const simple = {
   calls: 1,
 };
 
-const nested = {
+const nested: TestCase = {
   query: gql`
     {
       nested {
@@ -46,7 +52,7 @@ const nested = {
   calls: 1,
 };
 
-const nestedNullable = {
+const nestedNullable: TestCase = {
   query: gql`
     {
       nestedNullable {
@@ -58,7 +64,7 @@ const nestedNullable = {
   calls: 0,
 };
 
-const list = {
+const list: TestCase = {
   query: gql`
     {
       list
@@ -68,7 +74,7 @@ const list = {
   calls: 2,
 };
 
-const listNested = {
+const listNested: TestCase = {
   query: gql`
     {
       listNested {
@@ -80,7 +86,7 @@ const listNested = {
   calls: 2,
 };
 
-const listNestedNullable = {
+const listNestedNullable: TestCase = {
   query: gql`
     {
       listNestedNullable {
@@ -92,7 +98,7 @@ const listNestedNullable = {
   calls: 0,
 };
 
-const fragment1 = {
+const fragment1: TestCase = {
   query: gql`
     {
       ...QueryFields
@@ -108,7 +114,7 @@ const fragment1 = {
   calls: 1,
 };
 
-const fragment2 = {
+const fragment2: TestCase = {
   query: gql`
     {
       listNested {
@@ -124,7 +130,7 @@ const fragment2 = {
   calls: 2,
 };
 
-const repeatedFragment = {
+const repeatedFragment: TestCase = {
   query: gql`
     fragment SomeFragment on Nested {
       name
@@ -144,7 +150,7 @@ const repeatedFragment = {
   calls: 2,
 };
 
-const nestedFragment = {
+const nestedFragment: TestCase = {
   query: gql`
     query {
       listNested {
@@ -174,7 +180,7 @@ const nestedFragment = {
   calls: 2,
 };
 
-test.each([
+const TEST_CASES: TestCase[] = [
   fragment1,
   fragment2,
   list,
@@ -185,46 +191,55 @@ test.each([
   repeatedFragment,
   simple,
   nestedFragment,
-])('works on different structures', ({ query, data, calls }) => {
-  const op = client.createRequestOperation('query', {
-    key: 1,
-    query,
-    variables: {},
-  });
+];
 
-  const response = jest.fn(
-    (forwardOp: Operation): OperationResult => {
-      expect(forwardOp.key === op.key).toBeTruthy();
-      return {
-        operation: forwardOp,
-        data: { __typename: 'Query', ...data },
-      };
-    }
-  );
-  const result = jest.fn();
-  const forward: ExchangeIO = ops$ => pipe(ops$, map(response));
+test.each(TEST_CASES)(
+  'works on different structures',
+  ({ query, data, calls }) => {
+    const op = client.createRequestOperation('query', {
+      key: 1,
+      query,
+      variables: {},
+    });
 
-  const scalars = {
-    String: jest.fn((text: string) => {
-      return text;
-    }),
-  };
+    const response = jest.fn(
+      (forwardOp: Operation): OperationResult => {
+        expect(forwardOp.key === op.key).toBeTruthy();
+        return {
+          operation: forwardOp,
+          data: { __typename: 'Query', ...data },
+        };
+      }
+    );
+    const result = jest.fn();
+    const forward: ExchangeIO = ops$ => pipe(ops$, map(response));
 
-  pipe(
-    scalarExchange({
-      schema: (schema as unknown) as IntrospectionQuery,
-      scalars,
-    })({
-      forward,
-      client,
-      dispatchDebug,
-    })(ops$),
-    tap(result),
-    publish
-  );
+    const scalars = {
+      String: jest.fn((text: string) => {
+        return text.toUpperCase();
+      }),
+    };
 
-  next(op);
+    pipe(
+      scalarExchange({
+        schema: (schema as unknown) as IntrospectionQuery,
+        scalars,
+      })({
+        forward,
+        client,
+        dispatchDebug,
+      })(ops$),
+      map(operationResult => {
+        expect(operationResult.data).toMatchSnapshot('Output');
+        return operationResult;
+      }),
+      tap(result),
+      publish
+    );
 
-  expect(scalars.String).toHaveBeenCalledTimes(calls);
-  expect(result).toHaveBeenCalledTimes(1);
-});
+    next(op);
+
+    expect(scalars.String).toHaveBeenCalledTimes(calls);
+    expect(result).toHaveBeenCalledTimes(1);
+  }
+);
