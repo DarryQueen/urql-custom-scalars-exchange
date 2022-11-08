@@ -13,6 +13,7 @@ import schema from './__fixtures__/schema.json';
 
 interface TestCase {
   query: DocumentNode;
+  variables?: {};
   data: {};
   calls: number;
 }
@@ -96,6 +97,19 @@ const listNestedNullable: TestCase = {
   `,
   data: { listNestedNullable: null },
   calls: 0,
+};
+
+const listNestedWithInput: TestCase = {
+  query: gql`
+    {
+      listNested(input: $input) {
+        name
+      }
+    }
+  `,
+  variables: { input: { topInput: 'topInput' } },
+  data: { listNested: [nestedData, nestedData] },
+  calls: 2,
 };
 
 const fragment1: TestCase = {
@@ -186,6 +200,7 @@ const TEST_CASES: TestCase[] = [
   list,
   listNested,
   listNestedNullable,
+  listNestedWithInput,
   nested,
   nestedNullable,
   repeatedFragment,
@@ -195,16 +210,17 @@ const TEST_CASES: TestCase[] = [
 
 test.each(TEST_CASES)(
   'works on different structures',
-  ({ query, data, calls }) => {
+  ({ query, variables, data, calls }) => {
     const op = client.createRequestOperation('query', {
       key: 1,
       query,
-      variables: {},
+      variables,
     });
 
     const response = jest.fn(
       (forwardOp: Operation): OperationResult => {
         expect(forwardOp.key === op.key).toBeTruthy();
+        expect(forwardOp.variables).toMatchSnapshot('Variables');
         return {
           operation: forwardOp,
           data: { __typename: 'Query', ...data },
