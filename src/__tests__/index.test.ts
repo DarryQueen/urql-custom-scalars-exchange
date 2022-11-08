@@ -12,6 +12,7 @@ import scalarExchange from '../';
 import schema from './__fixtures__/schema.json';
 
 interface TestCase {
+  name: string;
   query: DocumentNode;
   variables?: {};
   data: {};
@@ -32,6 +33,7 @@ const simpleData = 'a';
 const nestedData = { name: 'a' };
 
 const simple: TestCase = {
+  name: 'simple',
   query: gql`
     {
       simple
@@ -42,6 +44,7 @@ const simple: TestCase = {
 };
 
 const nested: TestCase = {
+  name: 'nested',
   query: gql`
     {
       nested {
@@ -54,6 +57,7 @@ const nested: TestCase = {
 };
 
 const nestedNullable: TestCase = {
+  name: 'nestedNullable',
   query: gql`
     {
       nestedNullable {
@@ -66,6 +70,7 @@ const nestedNullable: TestCase = {
 };
 
 const list: TestCase = {
+  name: 'list',
   query: gql`
     {
       list
@@ -76,6 +81,7 @@ const list: TestCase = {
 };
 
 const listNested: TestCase = {
+  name: 'listNested',
   query: gql`
     {
       listNested {
@@ -88,6 +94,7 @@ const listNested: TestCase = {
 };
 
 const listNestedNullable: TestCase = {
+  name: 'listNestedNullable',
   query: gql`
     {
       listNestedNullable {
@@ -100,6 +107,7 @@ const listNestedNullable: TestCase = {
 };
 
 const listNestedWithInput: TestCase = {
+  name: 'listNestedWithInput',
   query: gql`
     {
       listNested(input: $input) {
@@ -113,6 +121,7 @@ const listNestedWithInput: TestCase = {
 };
 
 const fragment1: TestCase = {
+  name: 'fragment1',
   query: gql`
     {
       ...QueryFields
@@ -129,6 +138,7 @@ const fragment1: TestCase = {
 };
 
 const fragment2: TestCase = {
+  name: 'fragment2',
   query: gql`
     {
       listNested {
@@ -145,6 +155,7 @@ const fragment2: TestCase = {
 };
 
 const repeatedFragment: TestCase = {
+  name: 'repeatedFragment',
   query: gql`
     fragment SomeFragment on Nested {
       name
@@ -165,6 +176,7 @@ const repeatedFragment: TestCase = {
 };
 
 const nestedFragment: TestCase = {
+  name: 'nestedFragment',
   query: gql`
     query {
       listNested {
@@ -208,9 +220,8 @@ const TEST_CASES: TestCase[] = [
   nestedFragment,
 ];
 
-test.each(TEST_CASES)(
-  'works on different structures',
-  ({ query, variables, data, calls }) => {
+TEST_CASES.forEach(({ name, query, variables, data, calls }) => {
+  it(`works on the ${name} structure`, () => {
     const op = client.createRequestOperation('query', {
       key: 1,
       query,
@@ -220,7 +231,9 @@ test.each(TEST_CASES)(
     const response = jest.fn(
       (forwardOp: Operation): OperationResult => {
         expect(forwardOp.key === op.key).toBeTruthy();
-        expect(forwardOp.variables).toMatchSnapshot('Variables');
+        if (variables != null) {
+          expect(forwardOp.variables).toMatchSnapshot('Variables');
+        }
         return {
           operation: forwardOp,
           data: { __typename: 'Query', ...data },
@@ -257,5 +270,5 @@ test.each(TEST_CASES)(
 
     expect(scalars.String).toHaveBeenCalledTimes(calls);
     expect(result).toHaveBeenCalledTimes(1);
-  }
-);
+  });
+});

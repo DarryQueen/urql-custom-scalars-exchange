@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`works on different structures: Output 1`] = `
+exports[`works on the fragment1 structure: Output 1`] = `
 Object {
   "__typename": "Query",
   "listNested": Array [
@@ -11,7 +11,7 @@ Object {
 }
 `;
 
-exports[`works on different structures: Output 2`] = `
+exports[`works on the fragment2 structure: Output 1`] = `
 Object {
   "__typename": "Query",
   "listNested": Array [
@@ -25,7 +25,7 @@ Object {
 }
 `;
 
-exports[`works on different structures: Output 3`] = `
+exports[`works on the list structure: Output 1`] = `
 Object {
   "__typename": "Query",
   "list": Array [
@@ -35,7 +35,7 @@ Object {
 }
 `;
 
-exports[`works on different structures: Output 4`] = `
+exports[`works on the listNested structure: Output 1`] = `
 Object {
   "__typename": "Query",
   "listNested": Array [
@@ -49,14 +49,36 @@ Object {
 }
 `;
 
-exports[`works on different structures: Output 5`] = `
+exports[`works on the listNestedNullable structure: Output 1`] = `
 Object {
   "__typename": "Query",
   "listNestedNullable": null,
 }
 `;
 
-exports[`works on different structures: Output 6`] = `
+exports[`works on the listNestedWithInput structure: Output 1`] = `
+Object {
+  "__typename": "Query",
+  "listNested": Array [
+    Object {
+      "name": "A",
+    },
+    Object {
+      "name": "A",
+    },
+  ],
+}
+`;
+
+exports[`works on the listNestedWithInput structure: Variables 1`] = `
+Object {
+  "input": Object {
+    "topInput": "topInput",
+  },
+}
+`;
+
+exports[`works on the nested structure: Output 1`] = `
 Object {
   "__typename": "Query",
   "nested": Object {
@@ -65,14 +87,28 @@ Object {
 }
 `;
 
-exports[`works on different structures: Output 7`] = `
+exports[`works on the nestedFragment structure: Output 1`] = `
+Object {
+  "__typename": "Query",
+  "listNested": Array [
+    Object {
+      "deeplyNested": Object {
+        "name": "SECONDLEVEL",
+      },
+      "name": "FIRSTLEVEL",
+    },
+  ],
+}
+`;
+
+exports[`works on the nestedNullable structure: Output 1`] = `
 Object {
   "__typename": "Query",
   "nestedNullable": null,
 }
 `;
 
-exports[`works on different structures: Output 8`] = `
+exports[`works on the repeatedFragment structure: Output 1`] = `
 Object {
   "__typename": "Query",
   "first": Object {
@@ -84,23 +120,9 @@ Object {
 }
 `;
 
-exports[`works on different structures: Output 9`] = `
+exports[`works on the simple structure: Output 1`] = `
 Object {
   "__typename": "Query",
   "simple": "A",
-}
-`;
-
-exports[`works on different structures: Output 10`] = `
-Object {
-  "__typename": "Query",
-  "listNested": Array [
-    Object {
-      "deeplyNested": Object {
-        "name": "SECONDLEVEL",
-      },
-      "name": "FIRSTLEVEL",
-    },
-  ],
 }
 `;
