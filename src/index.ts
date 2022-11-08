@@ -1,4 +1,9 @@
-import { AnyVariables, Exchange, TypedDocumentNode } from '@urql/core';
+import {
+  AnyVariables,
+  Exchange,
+  Operation,
+  TypedDocumentNode,
+} from '@urql/core';
 import {
   ASTNode,
   buildClientSchema,
@@ -142,6 +147,47 @@ export default function scalarExchange({
   const clientSchema = buildClientSchema(schema);
   const typeInfoInstance = new TypeInfo(clientSchema);
 
+  const getScalarsInInput = (
+    query: DocumentNode | TypedDocumentNode<any, AnyVariables>
+  ): ScalarWithPath[] => {
+    const scalarsInInputs: ScalarWithPath[] = [];
+
+    const resolveScalarsInVariableDefinitions = (
+      variableName: string,
+      variableTypeName: string
+    ): ScalarWithPath[] => {
+      if (scalars[variableTypeName]) {
+        return [{ name: variableTypeName, path: [variableName] }];
+      }
+
+      const variableTypeNode = clientSchema.getType(variableTypeName);
+      if (variableTypeNode == null) {
+        return [];
+      }
+
+      // TODO(@dzhao): Resolve nested.
+      return [];
+    };
+
+    const visitor = visitWithTypeInfo(typeInfoInstance, {
+      VariableDefinition(node) {
+        const variableTypeNode = node.type;
+        visit(variableTypeNode, {
+          NamedType(variableNameNode) {
+            scalarsInInputs.push(
+              ...resolveScalarsInVariableDefinitions(
+                node.variable.name.value,
+                variableNameNode.name.value
+              )
+            );
+          },
+        });
+      },
+    });
+    visit(query, visitor);
+    return scalarsInInputs;
+  };
+
   const getScalarsInQuery = (
     query: DocumentNode | TypedDocumentNode<any, AnyVariables>
   ): ScalarWithPath[] => {
@@ -256,7 +302,26 @@ export default function scalarExchange({
   };
 
   return ({ forward }) => (operations$: any) => {
-    const operationResult$ = forward(operations$);
+    const operationResult$ = pipe(
+      operations$,
+      map((operation: Operation) => {
+        const scalarsInInputs = getScalarsInInput(operation.query);
+        if (scalarsInInputs.length === 0) {
+          return operation;
+        }
+
+        scalarsInInputs.forEach(({ name, path }) => {
+          operation.variables = mapScalar(
+            operation.variables,
+            path,
+            scalars[name]
+          );
+        });
+        return operation;
+      }),
+      forward
+    );
+
     return pipe(
       operationResult$,
       map(args => {
