@@ -81,6 +81,22 @@ Object {
 }
 `;
 
+exports[`works on the listWithInput structure: Output 1`] = `
+Object {
+  "__typename": "Query",
+  "list": Array [
+    "A",
+    "A",
+  ],
+}
+`;
+
+exports[`works on the listWithInput structure: Variables 1`] = `
+Object {
+  "input": "TOPINPUT",
+}
+`;
+
 exports[`works on the nested structure: Output 1`] = `
 Object {
   "__typename": "Query",

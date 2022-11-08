@@ -9,7 +9,7 @@ const schema = buildSchema(/* GraphQL */ `
   type Query {
     simple: String!
     nested: Nested!
-    list: [String!]!
+    list(input: String): [String!]!
     listNested(input: ListInput): [Nested!]!
   }
 

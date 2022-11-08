@@ -80,6 +80,18 @@ const list: TestCase = {
   calls: 2,
 };
 
+const listWithInput: TestCase = {
+  name: 'listWithInput',
+  query: gql`
+    query ListWithInput($input: String) {
+      list(input: $input)
+    }
+  `,
+  variables: { input: 'topInput' },
+  data: { list: [simpleData, simpleData] },
+  calls: 3,
+};
+
 const listNested: TestCase = {
   name: 'listNested',
   query: gql`
@@ -212,6 +224,7 @@ const TEST_CASES: TestCase[] = [
   fragment1,
   fragment2,
   list,
+  listWithInput,
   listNested,
   listNestedNullable,
   listNestedWithInput,
