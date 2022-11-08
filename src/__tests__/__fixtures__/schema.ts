@@ -10,12 +10,21 @@ const schema = buildSchema(/* GraphQL */ `
     simple: String!
     nested: Nested!
     list: [String!]!
-    listNested: [Nested!]!
+    listNested(input: ListNestedInput): [Nested!]!
   }
 
   type Nested {
     name: String!
     deeplyNested: Nested
+  }
+
+  input ListInput {
+    topInput: String
+    nested: ListNestedInput
+  }
+
+  input ListNestedInput {
+    nestedInput: String
   }
 `);
 
