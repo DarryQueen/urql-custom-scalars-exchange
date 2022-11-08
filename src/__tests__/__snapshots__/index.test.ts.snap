@@ -74,9 +74,9 @@ exports[`works on the listNestedWithInput structure: Variables 1`] = `
 Object {
   "input": Object {
     "nested": Object {
-      "nestedInput": "NESTEDINPUT",
+      "nestedInput": "n e s t e d I n p u t",
     },
-    "topInput": "TOPINPUT",
+    "topInput": "t o p I n p u t",
   },
 }
 `;
@@ -93,7 +93,7 @@ Object {
 
 exports[`works on the listWithInput structure: Variables 1`] = `
 Object {
-  "input": "TOPINPUT",
+  "input": "t o p I n p u t",
 }
 `;
 

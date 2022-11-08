@@ -8,7 +8,7 @@ import { DocumentNode, IntrospectionQuery } from 'graphql';
 import gql from 'graphql-tag';
 import { pipe, map, makeSubject, publish, tap } from 'wonka';
 
-import scalarExchange from '../';
+import scalarExchange, { ScalarMapping } from '../';
 import schema from './__fixtures__/schema.json';
 
 interface TestCase {
@@ -16,7 +16,8 @@ interface TestCase {
   query: DocumentNode;
   variables?: {};
   data: {};
-  calls: number;
+  serializeCalls?: number;
+  deserializeCalls: number;
 }
 
 const dispatchDebug = jest.fn();
@@ -40,7 +41,7 @@ const simple: TestCase = {
     }
   `,
   data: { simple: simpleData },
-  calls: 1,
+  deserializeCalls: 1,
 };
 
 const nested: TestCase = {
@@ -53,7 +54,7 @@ const nested: TestCase = {
     }
   `,
   data: { nested: nestedData },
-  calls: 1,
+  deserializeCalls: 1,
 };
 
 const nestedNullable: TestCase = {
@@ -66,7 +67,7 @@ const nestedNullable: TestCase = {
     }
   `,
   data: { nestedNullable: null },
-  calls: 0,
+  deserializeCalls: 0,
 };
 
 const list: TestCase = {
@@ -77,7 +78,7 @@ const list: TestCase = {
     }
   `,
   data: { list: [simpleData, simpleData] },
-  calls: 2,
+  deserializeCalls: 2,
 };
 
 const listWithInput: TestCase = {
@@ -89,7 +90,8 @@ const listWithInput: TestCase = {
   `,
   variables: { input: 'topInput' },
   data: { list: [simpleData, simpleData] },
-  calls: 3,
+  serializeCalls: 1,
+  deserializeCalls: 2,
 };
 
 const listNested: TestCase = {
@@ -102,7 +104,7 @@ const listNested: TestCase = {
     }
   `,
   data: { listNested: [nestedData, nestedData] },
-  calls: 2,
+  deserializeCalls: 2,
 };
 
 const listNestedNullable: TestCase = {
@@ -115,7 +117,7 @@ const listNestedNullable: TestCase = {
     }
   `,
   data: { listNestedNullable: null },
-  calls: 0,
+  deserializeCalls: 0,
 };
 
 const listNestedWithInput: TestCase = {
@@ -131,7 +133,8 @@ const listNestedWithInput: TestCase = {
     input: { topInput: 'topInput', nested: { nestedInput: 'nestedInput' } },
   },
   data: { listNested: [nestedData, nestedData] },
-  calls: 4,
+  serializeCalls: 2,
+  deserializeCalls: 2,
 };
 
 const fragment1: TestCase = {
@@ -148,7 +151,7 @@ const fragment1: TestCase = {
     }
   `,
   data: { listNested: [nestedData] },
-  calls: 1,
+  deserializeCalls: 1,
 };
 
 const fragment2: TestCase = {
@@ -165,7 +168,7 @@ const fragment2: TestCase = {
     }
   `,
   data: { listNested: [nestedData, nestedData] },
-  calls: 2,
+  deserializeCalls: 2,
 };
 
 const repeatedFragment: TestCase = {
@@ -186,7 +189,7 @@ const repeatedFragment: TestCase = {
     }
   `,
   data: { first: nestedData, second: nestedData },
-  calls: 2,
+  deserializeCalls: 2,
 };
 
 const nestedFragment: TestCase = {
@@ -217,7 +220,7 @@ const nestedFragment: TestCase = {
       },
     ],
   },
-  calls: 2,
+  deserializeCalls: 2,
 };
 
 const TEST_CASES: TestCase[] = [
@@ -235,55 +238,65 @@ const TEST_CASES: TestCase[] = [
   nestedFragment,
 ];
 
-TEST_CASES.forEach(({ name, query, variables, data, calls }) => {
-  it(`works on the ${name} structure`, () => {
-    const op = client.createRequestOperation('query', {
-      key: 1,
-      query,
-      variables,
-    });
+TEST_CASES.forEach(
+  ({ name, query, variables, data, serializeCalls, deserializeCalls }) => {
+    it(`works on the ${name} structure`, () => {
+      const op = client.createRequestOperation('query', {
+        key: 1,
+        query,
+        variables,
+      });
 
-    const response = jest.fn(
-      (forwardOp: Operation): OperationResult => {
-        expect(forwardOp.key === op.key).toBeTruthy();
-        if (variables != null) {
-          expect(forwardOp.variables).toMatchSnapshot('Variables');
+      const response = jest.fn(
+        (forwardOp: Operation): OperationResult => {
+          expect(forwardOp.key === op.key).toBeTruthy();
+          if (variables != null) {
+            expect(forwardOp.variables).toMatchSnapshot('Variables');
+          }
+          return {
+            operation: forwardOp,
+            data: { __typename: 'Query', ...data },
+          };
         }
-        return {
-          operation: forwardOp,
-          data: { __typename: 'Query', ...data },
-        };
+      );
+      const result = jest.fn();
+      const forward: ExchangeIO = ops$ => pipe(ops$, map(response));
+
+      const stringSerializer = jest.fn((text: String) =>
+        text.split('').join(' ')
+      );
+      const stringDeserializer = jest.fn((text: string) => text.toUpperCase());
+      const scalars: Record<string, ScalarMapping> = {
+        String: {
+          serialize: stringSerializer,
+          deserialize: stringDeserializer,
+        },
+      };
+
+      pipe(
+        scalarExchange({
+          schema: (schema as unknown) as IntrospectionQuery,
+          scalars,
+        })({
+          forward,
+          client,
+          dispatchDebug,
+        })(ops$),
+        map(operationResult => {
+          expect(operationResult.data).toMatchSnapshot('Output');
+          return operationResult;
+        }),
+        tap(result),
+        publish
+      );
+
+      next(op);
+
+      if (serializeCalls != null) {
+        expect(stringSerializer).toHaveBeenCalledTimes(serializeCalls);
       }
-    );
-    const result = jest.fn();
-    const forward: ExchangeIO = ops$ => pipe(ops$, map(response));
-
-    const scalars = {
-      String: jest.fn((text: string) => {
-        return text.toUpperCase();
-      }),
-    };
-
-    pipe(
-      scalarExchange({
-        schema: (schema as unknown) as IntrospectionQuery,
-        scalars,
-      })({
-        forward,
-        client,
-        dispatchDebug,
-      })(ops$),
-      map(operationResult => {
-        expect(operationResult.data).toMatchSnapshot('Output');
-        return operationResult;
-      }),
-      tap(result),
-      publish
-    );
-
-    next(op);
-
-    expect(scalars.String).toHaveBeenCalledTimes(calls);
-    expect(result).toHaveBeenCalledTimes(1);
-  });
-});
+      expect(stringDeserializer).toHaveBeenCalledTimes(deserializeCalls);
+      expect(result).toHaveBeenCalledTimes(1);
+    });
+  }
+);
