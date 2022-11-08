@@ -22,7 +22,11 @@ import {
 import { DocumentNode, isNode } from 'graphql/language/ast';
 import { map, pipe } from 'wonka';
 
-type ScalarMapping = (input: any) => any;
+type MapFunction = (input: any) => any;
+export interface ScalarMapping {
+  serialize?: MapFunction;
+  deserialize?: MapFunction;
+}
 
 interface ScalarWithPath {
   /**
@@ -44,6 +48,10 @@ interface FragmentInNode {
   path: PropertyKey[];
 }
 type NodeWithPath = ScalarInNode | FragmentInNode;
+
+function identity<T>(value: T): T {
+  return value;
+}
 
 function traverseAncestors(
   astPath: ReadonlyArray<number | string>,
@@ -81,7 +89,11 @@ function getPathAndFragmentName(
   return [path, fragmentName];
 }
 
-function mapScalar(data: any, path: PropertyKey[], mapping: ScalarMapping) {
+function mapScalar(
+  data: any,
+  path: PropertyKey[],
+  mapping: MapFunction = identity
+) {
   if (data == null) {
     return data;
   }
@@ -146,7 +158,7 @@ export default function scalarExchange({
       }
 
       if (isScalarType(variableType)) {
-        if (scalars[variableType.name]) {
+        if (scalars[variableType.name].serialize) {
           return [{ name: variableType.name, path: [] }];
         }
         return [];
@@ -218,7 +230,7 @@ export default function scalarExchange({
         }
 
         const { name } = scalarType;
-        if (scalars[name] == null) {
+        if (scalars[name].deserialize == null) {
           return;
         }
 
@@ -324,7 +336,7 @@ export default function scalarExchange({
           operation.variables = mapScalar(
             operation.variables,
             path,
-            scalars[name]
+            scalars[name].serialize
           );
         });
         return operation;
@@ -345,7 +357,7 @@ export default function scalarExchange({
         }
 
         scalarsInQuery.forEach(({ name, path }) => {
-          args.data = mapScalar(args.data, path, scalars[name]);
+          args.data = mapScalar(args.data, path, scalars[name].deserialize);
         });
         return args;
       })
