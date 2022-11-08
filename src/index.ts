@@ -7,11 +7,12 @@ import {
 import {
   ASTNode,
   buildClientSchema,
-  GraphQLOutputType,
-  GraphQLScalarType,
+  getNamedType,
+  GraphQLInputType,
   IntrospectionQuery,
-  isListType,
-  isNonNullType,
+  isEnumType,
+  isInputObjectType,
+  isInputType,
   isScalarType,
   Kind,
   TypeInfo,
@@ -120,22 +121,6 @@ interface ScalarExchangeOptions {
   schema: IntrospectionQuery;
 }
 
-function unpackTypeInner(type: GraphQLOutputType): GraphQLOutputType | void {
-  if (isListType(type) || isNonNullType(type)) {
-    return unpackTypeInner(type.ofType);
-  }
-
-  if (isScalarType(type)) {
-    return type;
-  }
-
-  return;
-}
-
-function unpackType(type: GraphQLOutputType): GraphQLScalarType | void {
-  return unpackTypeInner(type) as GraphQLScalarType | void;
-}
-
 function handleNever(value: never): never {
   return value;
 }
@@ -150,36 +135,61 @@ export default function scalarExchange({
   const getScalarsInInput = (
     query: DocumentNode | TypedDocumentNode<any, AnyVariables>
   ): ScalarWithPath[] => {
-    const scalarsInInputs: ScalarWithPath[] = [];
-
-    const resolveScalarsInVariableDefinitions = (
-      variableName: string,
-      variableTypeName: string
+    const resolveScalarsInInputType = (
+      inputType: GraphQLInputType,
+      visitedInputObjectTypeNames: string[] = []
     ): ScalarWithPath[] => {
-      if (scalars[variableTypeName]) {
-        return [{ name: variableTypeName, path: [variableName] }];
-      }
-
-      const variableTypeNode = clientSchema.getType(variableTypeName);
-      if (variableTypeNode == null) {
+      const variableType = getNamedType(inputType);
+      if (visitedInputObjectTypeNames.includes(variableType.name)) {
+        // There's a cycle in the variable input types; we should do something here but not error (because it's technically legal).
         return [];
       }
 
-      // TODO(@dzhao): Resolve nested.
-      return [];
+      if (isScalarType(variableType)) {
+        if (scalars[variableType.name]) {
+          return [{ name: variableType.name, path: [] }];
+        }
+        return [];
+      } else if (isEnumType(variableType)) {
+        return [];
+      } else if (isInputObjectType(variableType)) {
+        const scalarsInInputObjectType: ScalarWithPath[] = [];
+        Object.values(variableType.getFields()).forEach(({ name, type }) => {
+          const newScalars: ScalarWithPath[] = resolveScalarsInInputType(type, [
+            ...visitedInputObjectTypeNames,
+            variableType.name,
+          ]).map(scalarWithPath => ({
+            ...scalarWithPath,
+            path: [name, ...scalarWithPath.path],
+          }));
+          scalarsInInputObjectType.push(...newScalars);
+        });
+        return scalarsInInputObjectType;
+      }
+
+      return handleNever(variableType);
     };
 
+    const scalarsInInputs: ScalarWithPath[] = [];
     const visitor = visitWithTypeInfo(typeInfoInstance, {
       VariableDefinition(node) {
         const variableTypeNode = node.type;
         visit(variableTypeNode, {
           NamedType(variableNameNode) {
-            scalarsInInputs.push(
-              ...resolveScalarsInVariableDefinitions(
-                node.variable.name.value,
-                variableNameNode.name.value
-              )
+            const variableType = clientSchema.getType(
+              variableNameNode.name.value
             );
+            if (variableType == null || !isInputType(variableType)) {
+              return;
+            }
+
+            const newScalars: ScalarWithPath[] = resolveScalarsInInputType(
+              variableType
+            ).map(scalarWithPath => ({
+              ...scalarWithPath,
+              path: [node.variable.name.value, ...scalarWithPath.path],
+            }));
+            scalarsInInputs.push(...newScalars);
           },
         });
       },
@@ -202,8 +212,8 @@ export default function scalarExchange({
           return;
         }
 
-        const scalarType = unpackType(fieldType);
-        if (scalarType == null) {
+        const scalarType = getNamedType(fieldType);
+        if (!isScalarType(scalarType)) {
           return;
         }
 
