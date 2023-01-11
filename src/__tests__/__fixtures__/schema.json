@@ -174,9 +174,13 @@
           {
             "name": "nested",
             "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "ListNestedInput",
-              "ofType": null
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "kind": "INPUT_OBJECT",
+                "name": "ListNestedInput",
+                "ofType": null
+              }
             },
             "defaultValue": null
           }
