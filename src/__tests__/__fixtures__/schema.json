@@ -174,9 +174,13 @@
           {
             "name": "nested",
             "type": {
-              "kind": "INPUT_OBJECT",
-              "name": "ListNestedInput",
-              "ofType": null
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "kind": "INPUT_OBJECT",
+                "name": "ListNestedInput",
+                "ofType": null
+              }
             },
             "defaultValue": null
           }
@@ -188,6 +192,34 @@
       {
         "kind": "INPUT_OBJECT",
         "name": "ListNestedInput",
+        "fields": null,
+        "inputFields": [
+          {
+            "name": "nestedInput",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "defaultValue": null
+          },
+          {
+            "name": "nested",
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "OnceMoreNestedInput",
+              "ofType": null
+            },
+            "defaultValue": null
+          }
+        ],
+        "interfaces": null,
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "OnceMoreNestedInput",
         "fields": null,
         "inputFields": [
           {

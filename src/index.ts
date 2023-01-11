@@ -109,7 +109,7 @@ function mapScalar(
         mapScalar(subData, subPath, mapping)
       );
       return newData;
-    } else if (newSubData[segment] === null) {
+    } else if (newSubData[segment] == null) {
       return newData;
     } else {
       newSubData[segment] = { ...newSubData[segment] };

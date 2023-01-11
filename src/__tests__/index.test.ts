@@ -130,10 +130,18 @@ const listNestedWithInput: TestCase = {
     }
   `,
   variables: {
-    input: { topInput: 'topInput', nested: { nestedInput: 'nestedInput' } },
+    input: {
+      topInput: 'topInput',
+      nested: [
+        { nestedInput: 'nestedInput' },
+        undefined,
+        { nestedInput: 'nestedInput2' },
+        {},
+      ],
+    },
   },
   data: { listNested: [nestedData, nestedData] },
-  serializeCalls: 2,
+  serializeCalls: 3,
   deserializeCalls: 2,
 };
 

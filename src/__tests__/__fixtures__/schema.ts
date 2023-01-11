@@ -20,10 +20,15 @@ const schema = buildSchema(/* GraphQL */ `
 
   input ListInput {
     topInput: String
-    nested: ListNestedInput
+    nested: [ListNestedInput]
   }
 
   input ListNestedInput {
+    nestedInput: String
+    nested: OnceMoreNestedInput
+  }
+
+  input OnceMoreNestedInput {
     nestedInput: String
   }
 `);
